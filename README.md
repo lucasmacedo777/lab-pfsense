@@ -24,10 +24,8 @@ O ambiente roda sobre **Proxmox VE** com o **pfSense** atuando como firewall e r
 
 ## Arquitetura
 
-```
- <img width="1024" height="559" alt="topologia" src="https://github.com/user-attachments/assets/457dcf03-cfd3-4629-8740-656c1882683e" />
+<img width="1024" height="559" alt="topologia" src="https://github.com/user-attachments/assets/d7301550-d065-4752-9982-2092994b8589" />
 
-```
 
 ### Segmentação de Rede (VLANs)
 
