@@ -1,47 +1,99 @@
-# pfSense LAB
+# 🔵 pfSense Lab
 
-## 📌 Descrição do Projeto
-Este repositório documenta a implementação de um laboratório corporativo virtualizado de Cibersegurança (Blue Team), focado em segmentação de rede por departamentos (VLANs), gestão centralizada de identidades via Active Directory (Windows Server 2025) e captura avançada de telemetria em *endpoints* para análise de ameaças.
+> Laboratório corporativo virtualizado de cibersegurança com segmentação por VLANs, identidade centralizada via Active Directory e telemetria avançada de endpoints.
 
----
+<img width="1369" height="558" alt="image" src="https://github.com/user-attachments/assets/fb7c50e5-3959-414e-857d-b90035e86234" />
+<img width="1291" height="804" alt="image" src="https://github.com/user-attachments/assets/1e0aba98-0b52-4cc4-92cc-4a3164a5c67a" />
+<img width="1311" height="815" alt="image" src="https://github.com/user-attachments/assets/8b547796-74bb-4ee6-82ec-aff912b1b475" />
+<img width="1697" height="981" alt="image" src="https://github.com/user-attachments/assets/e59e380a-b8a1-4318-bc62-d400a5b8f358" />
 
-## 📐 Arquitetura de Rede e Topologia
-
-O ambiente foi construído sobre o hipervisor **Proxmox VE**, utilizando o **pfSense** como firewall/roteador principal e *trunking* 802.1Q habilitado na bridge virtual (`vmbr1`).
-
-### Tabela de Segmentação de Redes (VLANs)
-
-| Segmento / Departamento | ID da VLAN | Sub-rede | Gateway (pfSense) | Descrição |
-| :--- | :--- | :--- | :--- | :--- |
-| **Core / Servidores** | *Nativa (`vmbr1`)* | `192.168.2.0/24` | `192.168.2.1` | Controlador de Domínio (`DC-01`: `192.168.2.10`) |
-| **FINANCEIRO** | `VLAN 10` | `192.168.10.0/24` | `192.168.10.1` | Estações de trabalho do setor Financeiro |
-| **RH** | `VLAN 20` | `192.168.20.0/24` | `192.168.20.1` | Estações de trabalho do setor de RH |
-| **TI** | `VLAN 30` | `192.168.30.0/24` | `192.168.30.1` | Estações de trabalho do setor de TI |
 
 ---
 
-## 🚀 Etapas da Implementação
+## Visão Geral
 
-### 1. Infraestrutura Base e Serviços de Domínio
-* Implementação do **Windows Server 2025** (`DC-01`) no domínio `lab.local`.
-* Criação de Unidades Organizacionais (OUs) organizadas sob a estrutura hierárquica `DEPARTAMENTOS` (`FINANCEIRO`, `RH`, `TI`).
-* Integração do cliente **Windows 11** ao domínio Active Directory.
+Este repositório documenta a construção de um laboratório de Blue Team do zero, com foco em três pilares:
 
-### 2. Segmentação L2/L3 no Proxmox e pfSense
-* Habilitação da funcionalidade **VLAN Aware** na bridge `vmbr1` do Proxmox VE.
-* Criação de sub-interfaces 802.1Q (VLANs 10, 20 e 30) associadas à interface LAN (`vtnet1`) do pfSense.
-* Configuração do **Servidor DHCP** por sub-rede, apontando obrigatoriamente o DNS para o Controlador de Domínio (`192.168.2.10`).
-* Aplicação de regras no pfSense para permissão de tráfego inter-VLAN e acesso à Internet.
-* Adjustment de infraestrutura virtual: Desativação do *Hardware Offloading* no pfSense para correção de processamento de *tags* 802.1Q sobre drivers VirtIO.
+- **Segmentação de rede** departamental via VLANs (802.1Q)
+- **Gestão centralizada de identidades** com Active Directory no Windows Server 2025
+- **Telemetria de endpoints** para detecção e análise de ameaças (Sysmon + GPO de Auditoria)
 
-### 3. Elevação de Telemetria e Auditoria
-* Criação e aplicação de GPO corporativa (`GPO-BlueTeam-Audit`) para habilitação da **Auditoria Avançada de Processos** e captura da linha de comandos (**Event ID 4688**).
-* Implementação do **Sysmon (System Monitor - Sysinternals)** nos *endpoints* utilizando perfil defensivo otimizado para mitigação e deteção de técnicas MITRE ATT&CK.
+O ambiente roda sobre **Proxmox VE** com o **pfSense** atuando como firewall e roteador principal, simulando uma rede corporativa real em escala de laboratório.
 
 ---
 
-## 🔍 Testes de Validação Efetuados
+## Arquitetura
 
-1. **Validação de Camada 2 / DHCP:** Associação da tag de VLAN `10` na vNIC do cliente Windows 11 no Proxmox, resultando na concessão bem-sucedida de IP na sub-rede `192.168.10.0/24`.
-2. **Validação Roteamento Inter-VLAN e DNS:** Confirmação de conectividade via ICMP e consultas DNS (`nslookup lab.local` e `nslookup google.com`) a partir do cliente segmentado até ao `DC-01` e Internet.
-3. **Validação de Logs de Segurança:** Verificação da geração de eventos no *Event Viewer* em `Microsoft-Windows-Sysmon/Operational` e `Security` (Event ID 4688 com linha de comando expandida).
+```
+ <img width="1024" height="559" alt="topologia" src="https://github.com/user-attachments/assets/457dcf03-cfd3-4629-8740-656c1882683e" />
+
+```
+
+### Segmentação de Rede (VLANs)
+
+| Segmento | VLAN | Sub-rede | Gateway | Hosts |
+|:---------|:----:|:---------|:--------|:------|
+| Core / Servidores | *Nativa* | `192.168.2.0/24` | `192.168.2.1` | DC-01 (`192.168.2.10`) |
+| Financeiro | `10` | `192.168.10.0/24` | `192.168.10.1` | Estações do setor Financeiro |
+| RH | `20` | `192.168.20.0/24` | `192.168.20.1` | Estações do setor de RH |
+| TI | `30` | `192.168.30.0/24` | `192.168.30.1` | Estações do setor de TI |
+
+---
+
+## Stack de Tecnologias
+
+| Camada | Tecnologia |
+|:-------|:-----------|
+| Hipervisor | Proxmox VE |
+| Firewall / Roteador | pfSense (vtnet1 + sub-interfaces 802.1Q) |
+| Controlador de Domínio | Windows Server 2025 — domínio `lab.local` |
+| Cliente | Windows 11 (ingressado no domínio) |
+| Telemetria | Sysmon (Sysinternals) + GPO de Auditoria Avançada |
+| Framework de Detecção | MITRE ATT&CK |
+
+---
+
+## Implementação
+
+### 1 — Infraestrutura Base e Active Directory
+
+- Deploy do **Windows Server 2025** como `DC-01` no domínio `lab.local`
+- Estrutura de Unidades Organizacionais (OUs) sob `DEPARTAMENTOS`:
+  - `OU=FINANCEIRO`
+  - `OU=RH`
+  - `OU=TI`
+- Ingresso do cliente Windows 11 ao domínio
+
+### 2 — Segmentação L2/L3 (Proxmox + pfSense)
+
+- Ativação de **VLAN Aware** na bridge `vmbr1` do Proxmox
+- Criação de sub-interfaces 802.1Q (VLANs 10, 20, 30) na interface LAN (`vtnet1`) do pfSense
+- Configuração do **servidor DHCP por VLAN**, com DNS apontando para `DC-01` (`192.168.2.10`)
+- Regras de firewall para tráfego inter-VLAN e acesso à internet
+- **Desativação do Hardware Offloading** no pfSense para processamento correto de tags 802.1Q sobre drivers VirtIO
+
+### 3 — Telemetria e Auditoria de Segurança
+
+- Deploy da **GPO `GPO-BlueTeam-Audit`** com:
+  - Auditoria Avançada de Criação de Processos habilitada
+  - Captura da linha de comando completa (**Event ID 4688**)
+- Implementação do **Sysmon** nos endpoints com perfil defensivo alinhado às técnicas do MITRE ATT&CK
+
+---
+
+## Validação
+
+Cada etapa foi validada com testes objetivos:
+
+**Camada 2 / DHCP**
+> Associação da tag VLAN `10` na vNIC do Windows 11 → concessão de IP na sub-rede `192.168.10.0/24` confirmada.
+
+**Roteamento inter-VLAN e DNS**
+> Ping e `nslookup lab.local` / `nslookup google.com` a partir do cliente segmentado → conectividade com `DC-01` e internet confirmada.
+
+**Logs de Segurança**
+> Geração de eventos verificada no Event Viewer em:
+> - `Microsoft-Windows-Sysmon/Operational`
+> - `Security` — Event ID 4688 com linha de comando expandida
+
+---
